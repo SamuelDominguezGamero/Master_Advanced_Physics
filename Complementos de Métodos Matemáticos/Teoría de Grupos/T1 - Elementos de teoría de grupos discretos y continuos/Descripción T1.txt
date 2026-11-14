@@ -1,0 +1,13 @@
+Los conceptos básicos sobre grupos y ejemplos sencillos de grupos discretos pueden estudiarse en los capítulos 1 y 2 del libro de Hamermesh de la bibliografía complementaria. Para una introducción al concepto de grupos de Lie y su aplicación al estudio de invariancia de ecuaciones diferenciales recomendamos los capítulos 1 y 2 del libro de Cantwell de la bibliografía complementaria. En particular en el capítulo 2 de este texto se revisa desde el punto de vista de los grupos de Lie el conocido teorema Pi de Buckingham que da lugar al Análisis Dimensional. También recomendamos el primer capítulo del libro de Arrigo: Symmetry Analysis of Differential Equations, recomendado en la bibliografía básica de la asignatura.
+
+
+Lecturas complementarias:
+
+Una lectura muy útil y práctica orientada a físicos es: "Group Theory in Physics: An Introduction with Mathematica" de B. Ananthanarayan, S. Das, A. Lahiri, S. Sheikh, S. Talukdar,  Eur.Phys.J.ST 233 (2024) 7, 1443-1513,  https://arxiv.org/abs/2408.01441 Está diseñado como un curso de teoría de grupos utilizando Mathematica, pero aunque no se disponga del software, el documento contiene mucho material y explicaciones prácticas.
+
+La simetría es una propiedad que aparece con frecuencia en multitud de campos, lo cual queda reflejado en diversas leyes físicas. Para una introducción al tema de la simetría en las leyes de la física son recomendables los siguientes libros de Feynman y Weyl
+- The Character of Physical Law .  Richard P. Feynman. Modern Library, 1994. https://en.wikipedia.org/wiki/The_Character_of_Physical_Law
+- Symmetry. Hermann Weyl. Princeton University Press, 1952.  https://people.math.harvard.edu/~knill/teaching/mathe320_2017/blog17/Hermann_Weyl_Symmetry.pdf
+- Capítulo 52 de las Feynman Lectures on Physics: The Feynman Lectures on Physics. Richard P. Feynman. Basic Books; New Millennium ed. 2011. Vol. 1 Ch. 52 Symmetry in physical laws
+
+
