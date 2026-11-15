@@ -1,0 +1,204 @@
+\documentclass[11pt, a4paper]{article}
+
+% Codificación e idioma
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+
+% Tipografía y espaciado editorial
+\usepackage{lmodern}
+\usepackage{microtype}
+\linespread{1.06}
+
+% Matemáticas y física
+\usepackage{amsmath, amssymb, amsfonts}
+
+% Geometría A4 estándar revista científica (1 columna)
+\usepackage[
+    a4paper,
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm,
+    includeheadfoot
+]{geometry}
+
+% Figuras y tablas
+\usepackage{graphicx}
+\graphicspath{{../}}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage[font=small, labelfont=bf, margin=0.8cm]{caption}
+
+% Hipervínculos sobrios
+\usepackage[colorlinks=true, linkcolor=blue!55!black, citecolor=green!45!black, urlcolor=blue!65!black]{hyperref}
+
+% Listados de código
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codebg}{rgb}{0.97, 0.97, 0.97}
+\definecolor{codecomment}{rgb}{0.35, 0.50, 0.35}
+\definecolor{codekeyword}{rgb}{0.10, 0.30, 0.70}
+\definecolor{codestring}{rgb}{0.65, 0.15, 0.15}
+
+\lstdefinelanguage{Julia}{
+    morekeywords={abstract,break,case,catch,const,continue,do,else,elseif,end,export,false,for,function,immutable,import,importall,if,in,macro,module,otherwise,quote,return,switch,true,try,type,typealias,using,while,struct,mutable,let,local,global},
+    sensitive=true,
+    morecomment=[l]{\#},
+    morecomment=[n]{\#=}{=\#},
+    morestring=[s]{"}{"},
+}
+
+\lstset{
+    language=Julia,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment}\itshape,
+    stringstyle=\color{codestring},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray!30},
+    tabsize=4,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+             {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+             {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {π}{{$\pi$}}1
+}
+
+% Datos del documento
+\title{\textbf{Tarea 1 -- Métodos de Simulación y Sistemas Complejos}}
+\author{Samuel Domínguez Gamero}
+\date{Noviembre de 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+
+
+\section{Introducción}
+\textit{No se ha utilizado ningún tipo de Inteligencia Artificial para la redacción de del documento de la memoria, ni para la lógica desarrollada dentro de los códigos de este trabajo.}
+
+El método Monte Carlo es una técnica de computación extremadamente popular en múltiples áreas de la ciencia, abarcando desde la Física hasta la Economía. Tal es su extensión que, a día de hoy, cualquier técnica numérica en la que el muestreo de números aleatorios desempeñe un papel central recibe el nombre de método de Monte Carlo.
+
+Su origen moderno se remonta a la década de 1940, cuando Stanislaw Ulam (junto con John von Neumann) ideó este enfoque mientras trabajaba en problemas de difusión de neutrones. El nombre hace referencia al famoso casino de Montecarlo, en Mónaco, en alusión al carácter probabilístico del método y a la afición de un familiar de Ulam por los juegos de azar.
+
+La idea principal consiste en realizar simulaciones o experimentos numéricos empleando el muestreo aleatorio para obtener resultados aproximados; en esencia, se utiliza la aleatoriedad para resolver problemas deterministas. Entre sus aplicaciones más habituales destacan:
+\begin{itemize}
+    \item \textbf{Física de altas energías}: simulación del transporte e interacción de partículas en detectores. Por ejemplo, herramientas como \textsc{Geant4}, desarrolladas por el CERN.
+    \item \textbf{Mecánica estadística}: muestreo de configuraciones en sistemas de muchos cuerpos, como el algoritmo de Metrópolis.
+    \item \textbf{Finanzas y economía}: valoración de derivados y simulación de carteras de inversión bajo escenarios de riesgo.
+\end{itemize}
+
+\subsection{Números pseudoaleatorios}
+Dado que un ordenador es una máquina determinista, no genera números verdaderamente aleatorios, sino secuencias deterministas que imitan sus propiedades estadísticas: los \textit{números pseudoaleatorios}. Para garantizar la reproducibilidad de los experimentos numéricos, resulta fundamental fijar una \textit{semilla} (\textit{seed}) inicial, de modo que la secuencia generada pueda repetirse exactamente en ejecuciones posteriores.
+
+En este trabajo se emplea el generador por defecto de Julia, basado en el algoritmo \texttt{Xoshiro256++}~\cite{JuliaRandomDocs}, que ofrece un periodo amplio y buenas propiedades estadísticas para simulaciones Monte Carlo.
+% TODO: Ampliar si se desea comentar brevemente el periodo o el uso de la semilla en los scripts.
+
+% ---------------------------------------------------------------------
+\section{Apartado 1: Estimación del valor de \texorpdfstring{$\pi$}{pi}}
+
+\subsection{Planteamiento del problema}
+El objetivo de este primer apartado es estimar el valor de la constante $\pi$, fundamental en prácticamente todos los campos de la Física y/o Matemáticas, a través del método Monte Carlo.
+
+Para ello, se considera un hipercubo en 5 dimensiones, de lado $L$, y una esfera inscrita en el mismo. Mediante un generador de números pseudoaleatorios con distribución uniforme se definen una serie de puntos en el espacio 5-dimensional, siempre dentro del hipercubo.
+
+En términos probabilísticos, $\vec{x}$ se trata de un vector de 5 componentes, donde cada una de ellas puede describirse mediante una distribución aleatoria uniforme en el intervalo $[\frac{-L}{2}, \frac{L}{2}]$.
+
+\begin{equation}
+    \vec{x} = (x_1, x_2, x_3, x_4, x_5) \rightarrow x_i \sim \mathcal{U}\left[\frac{-L}{2}, \frac{L}{2}\right] \forall i \in [1,2,3,4,5].
+\end{equation}
+
+El número de puntos generados lo denotaremos por $N$. La precisión de la estimación dependerá directamente de $N$, como explicaremos más adelante.
+
+El ratio de volúmenes nos permitirá directamente la obtención valor de $\pi$. En particular, el volumen del hipercubo viene dado por:
+\begin{equation}
+V_{\text{hipercubo}} = L^D,
+\end{equation}
+donde $D$ hace referencia a la dimensión espacial del problema, siendo, para nuestro caso, $D=5$. El volumen de la hiperesfera N-dimensional es un resultado clásico de la generalización de la geometría euclídea a dimensión arbitraria, siguiendo la expresión:
+\begin{equation}
+V_{\text{hipersfera}} = \frac{\pi^{D/2} R^n}{\Gamma(D/2 + 1)},
+\end{equation}
+donde $R$ hace referencia radio de la hiperesfera, $\Gamma$ a la función gamma, que extiende el concepto de factorial a los números reales y complejos ($\Gamma(D+1) = D!$, en caso de que $D\in \mathbb{N}$). En lo que sigue fijaremos $D=5$.
+
+El ratio de volúmenes resulta entonces, dado que el diámetro de la hiperesfera utilizada es~$2R=L$:
+\begin{equation}
+\frac{V_{\text{hipersfera}}}{V_{\text{hipercubo}}}= \frac{\pi^{5/2}}{32 \, \Gamma(5/2 + 1)}
+\end{equation}
+
+Al muestrear puntos uniformemente por todo el hipercubo, algunos de los puntos serán ubicados dentro de la hiperesfera inscrita ($N_{\text{in}}$), mientras que otros quedarán fuera. Dado que el origen de coordenadas se ubica en el centro geométrico tanto de la hiperesfera como el hipercubo, la condición para comprobar si un punto pertenece o no al volumen definido por la esfera viene dada por la norma euclídea del vector de posición del punto:
+\begin{equation}
+\vec{x} \in B_{L/2}^D(\vec{0}) \iff ||\vec{x}||^2 = \sum_{i=1}^5 x_i^2 \leq R^2
+\end{equation}
+donde $B_{L/2}^5$ es la bola cerrada en dimensión 5, centrada en el origen, con radio $L/2$, nuestro volumen de interés.
+
+Precisamente, este cociente entre los puntos contenidos en el interior de la hiperesfera $B_{L/2}^5$ y el total de puntos muestreados proporciona una estimación directa de la razón de volúmenes:
+\begin{equation}
+\frac{N_{\text{in}}}{N} \approx \frac{V_{\text{hiperesfera}}}{V_{\text{hipercubo}}} \quad \Longrightarrow \quad \lim_{N \to \infty} \frac{N_{\text{in}}}{N} = \frac{V_{\text{hiperesfera}}}{V_{\text{hipercubo}}}
+\end{equation}
+permitiéndonos obtener el valor de $\pi$.
+
+
+
+
+\subsection{Implementación algorítmica}
+% TODO: Describir el algoritmo implementado, la estimación del error estadístico y el estudio de convergencia con N.
+
+% ----------------------------------------------------------------------
+\section{Apartado 2: Integración numérica Monte Carlo}
+En este apartado se aborda la estimación numérica de integrales definidas mediante técnicas de Monte Carlo, comparando el muestreo uniforme estándar con estrategias de reducción de varianza.
+
+La integral a 
+
+\subsection{Estimación mediante distribución uniforme}
+El enfoque más directo (Monte Carlo crudo) consiste en muestrear puntos de forma uniforme en el dominio de integración. Sin embargo, cuando el integrando presenta variaciones bruscas o regiones que contribuyen muy poco a la integral, este método resulta ineficiente y requiere un número elevado de muestras para alcanzar una precisión aceptable.
+% TODO: Añadir el estimador uniforme y su varianza.
+
+\subsection{Muestreo por importancia (\textit{Importance Sampling})}
+Para mitigar la alta varianza del muestreo uniforme, se recurre a la generación no uniforme de números aleatorios mediante \textit{Importance Sampling}. La idea es concentrar las muestras en las regiones donde el integrando es más significativo, utilizando una función de densidad de probabilidad auxiliar $p(x)$ adaptada a la forma del integrando.
+% TODO: Escribir la reescritura de la integral con p(x) y justificar la elección de la distribución auxiliar.
+
+\subsection{Método de aceptación-rechazo}
+Cuando no es inmediato muestrear directamente de la distribución auxiliar elegida (por ejemplo, mediante el método de la transformada inversa), puede emplearse el método de aceptación-rechazo para generar los puntos distribuidos según $p(x)$ a partir de una distribución envolvente más sencilla.
+% TODO: Explicar brevemente el criterio de aceptación-rechazo aplicado al problema.
+
+
+% ----------------------------------------------------------------------
+\section{Resultados}
+% TODO: Presentar tablas y figuras con los resultados numéricos de ambos apartados.
+
+
+
+% ----------------------------------------------------------------------
+\section{Conclusiones}
+% TODO: Resumir los hallazgos principales, comparación de precisión/convergencia y observaciones finales.
+
+% ----------------------------------------------------------------------
+% \nocite{*} % Descomentar si quieres que aparezcan todas las entradas de references.bib sin citarlas en el texto
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+% ----------------------------------------------------------------------
+\newpage
+\appendix
+
+\section{Códigos Apartado 1}
+% TODO: Pegar el código o descomentar la línea siguiente para incluirlo directamente desde ../tarea1.jl
+% \lstinputlisting[caption={Código del Apartado 1 (\texttt{tarea1.jl}).}, label={lst:apartado1}]{../tarea1.jl}
+
+\section{Códigos Apartado 2}
+% TODO: Pegar el código o descomentar la línea siguiente para incluirlo directamente desde ../tarea2.jl
+% \lstinputlisting[caption={Código del Apartado 2 (\texttt{tarea2.jl}).}, label={lst:apartado2}]{../tarea2.jl}
+
+\end{document}

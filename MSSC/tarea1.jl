@@ -18,7 +18,8 @@ function estimar_pi_mc(N::Int, L::Float64, reps::Int; verbose::Bool=false)
     
     # Distribución paralela sobre las realizaciones (semillas 1:reps)
     Threads.@threads for i in 1:reps
-        rng = Xoshiro(i)
+        seed = i
+        rng = Xoshiro(seed)
         puntos_dentro = 0
         
         for _ in 1:N
