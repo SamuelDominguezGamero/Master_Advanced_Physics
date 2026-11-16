@@ -97,6 +97,8 @@
 
 \section{Introducción}
 \textit{No se ha utilizado ningún tipo de Inteligencia Artificial para la redacción de del documento de la memoria, ni para la lógica desarrollada dentro de los códigos de este trabajo.}
+% SUGERENCIA: El enunciado (p. 1) exige incluir literalmente el párrafo de declaración de autoría al comienzo de la memoria. Conviene sustituir esta línea por el texto literal del enunciado y corregir la errata "de del".
+% SUGERENCIA: Indicar explícitamente en la Introducción el software utilizado para los cálculos y las gráficas (Julia + Plots.jl / GR), tal como pide la Nota previa del enunciado.
 
 El método Monte Carlo es una técnica de computación extremadamente popular en múltiples áreas de la ciencia, abarcando desde la Física hasta la Economía. Tal es su extensión que, a día de hoy, cualquier técnica numérica en la que el muestreo de números aleatorios desempeñe un papel central recibe el nombre de método de Monte Carlo.
 
@@ -139,6 +141,7 @@ donde $D$ hace referencia a la dimensión espacial del problema, siendo, para nu
 \begin{equation}
 V_{\text{hipersfera}} = \frac{\pi^{D/2} R^n}{\Gamma(D/2 + 1)},
 \end{equation}
+% SUGERENCIA: Revisar el exponente de R en la ecuación anterior: aparece R^n en lugar de R^D.
 donde $R$ hace referencia radio de la hiperesfera, $\Gamma$ a la función gamma, que extiende el concepto de factorial a los números reales y complejos ($\Gamma(D+1) = D!$, en caso de que $D\in \mathbb{N}$). En lo que sigue fijaremos $D=5$.
 
 El ratio de volúmenes resulta entonces, dado que el diámetro de la hiperesfera utilizada es~$2R=L$:
@@ -277,6 +280,8 @@ De este modo, la probabilidad de aceptar un punto en una región dada es proporc
     \end{tabular}
 \end{table}
 
+Para analizar la mejora en precisión de forma robusta, se repitió el experimento $K = 50$ veces con semillas distintas para $N = 10^5$ propuestas (Tabla~\ref{tab:mc_integral_resumen}). Como se observa en la Figura~\ref{fig:tarea2_apartado_b}, la distribución de las estimaciones obtenidas mediante aceptación-rechazo es notablemente más estrecha en torno al valor exacto, reduciendo el error estándar en un factor $\sim 2.58\times$ ($2.66\times$ en dispersión empírica).
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1
@@ -285,9 +290,51 @@ De este modo, la probabilidad de aceptar un punto en una región dada es proporc
     \label{fig:convergencia_mc_pi}
 \end{figure}
 
+\subsection{Integración numérica Monte Carlo}
+En esta sección se presentan los resultados obtenidos mediante \texttt{tarea2.jl} para la integral $I = \int_0^{0.8} \cos(\pi x / 2)\,\mathrm{d}x$ (cuyo valor analítico exacto es $I = \frac{2}{\pi}\sin(0.4\pi) \approx 0.605461$), comparando el muestreo uniforme con el muestreo por importancia mediante aceptación-rechazo.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparación entre muestreo uniforme y aceptación-rechazo para la integral en $[0, 0.8]$ ($I_{\text{exacto}} \approx 0.605461$).}
+    \label{tab:mc_integral_resumen}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Método} & \textbf{Configuración} & \textbf{Estimación ($\hat{I} \pm \sigma_{\hat{I}}$)} & \textbf{Eficiencia / Mejora} \\
+        \midrule
+        Uniforme & $N = 10^6,\; K = 1$ & $0.605537 \pm 0.000168$ & Referencia ($1.00\times$) \\
+        Aceptación-Rechazo & $N = 10^6,\; K = 1$ & $0.605578 \pm 0.000065$ & $\eta = 66.65\%$ ($2.58\times$) \\
+        \midrule
+        Uniforme & $N = 10^5,\; K = 50$ & $\sigma_{\text{emp}} = 0.000460$ & Referencia ($1.00\times$) \\
+        Aceptación-Rechazo & $N = 10^5,\; K = 50$ & $\sigma_{\text{emp}} = 0.000173$ & $2.66\times$ (empírico) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Para analizar la mejora en precisión de forma robusta, se repitió el experimento $K = 50$ veces con semillas distintas para $N = 10^5$ propuestas (Tabla~\ref{tab:mc_integral_resumen}). Como se observa en la Figura~\ref{fig:tarea2_apartado_b}, la distribución de las estimaciones obtenidas mediante aceptación-rechazo es notablemente más estrecha en torno al valor exacto, reduciendo el error estándar en un factor $\sim 2.58\times$ ($2.66\times$ en dispersión empírica).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{tarea2_apartado_b_figura.pdf}
+    \caption{Distribución de las $K = 50$ estimaciones independientes de la integral con $N = 10^5$ propuestas para ambos métodos, frente al valor analítico exacto.}
+    \label{fig:tarea2_apartado_b}
+\end{figure}
+% SUGERENCIA (Apartado b): Discutir que la mejora de ~2.58x a igualdad de propuestas se reduce a ~1.82x si se fija el número total de llamadas al RNG (aceptación-rechazo consume 2 números aleatorios por propuesta y acepta ~2/3).
+
+Finalmente, se estudió la evolución del error estándar $\sigma_{\hat{I}}$ al variar el número de propuestas $N$ entre $10^3$ y $10^6$. La Figura~\ref{fig:tarea2_apartado_c} muestra en escala log-log que ambos métodos siguen la ley de convergencia teórica $\sigma_{\hat{I}} \propto N^{-1/2}$, manteniendo el muestreo por aceptación-rechazo un desplazamiento vertical constante por debajo del muestreo uniforme.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{tarea2_apartado_c_figura.pdf}
+    \caption{Convergencia del error estándar $\sigma_{\hat{I}}$ frente al número de propuestas $N$ en escala log-log, junto con la referencia teórica $\propto N^{-1/2}$.}
+    \label{fig:tarea2_apartado_c}
+\end{figure}
+% SUGERENCIA (Apartado c): Comentar cuántas muestras N menos necesita aceptación-rechazo para alcanzar la misma precisión que el muestreo uniforme (factor ~6.6x menos propuestas).
+% SUGERENCIA (Apartado d): Explicar por qué rho(x) = 1 - 1.2x^3 reduce la varianza (su forma imita a cos(pi*x/2) en [0, 0.8], haciendo f(x)/rho(x) casi constante) y proponer una densidad aún mejor (p. ej. aproximación de Taylor de cos(pi*x/2) o muestreo directo por transformada inversa).
+
 
 % ----------------------------------------------------------------------
 \section{Conclusiones}
+% SUGERENCIA: Resumir los hallazgos clave de ambos apartados (ley N^-1/2 en 5D y 1D, reducción de varianza ~6.6x con importance sampling) y añadir un breve párrafo de trabajo futuro (p. ej. muestreo estratificado, secuencias cuasi-aleatorias de Sobol o transformada inversa).
 
 % ----------------------------------------------------------------------
 % \nocite{*} % Descomentar si quieres que aparezcan todas las entradas de references.bib sin citarlas en el texto
@@ -302,7 +349,6 @@ De este modo, la probabilidad de aceptar un punto en una región dada es proporc
 \lstinputlisting[caption={Código del Apartado 1 (\texttt{tarea1.jl}).}, label={lst:apartado1}]{../tarea1.jl}
 
 \section{Códigos Apartado 2}
-% TODO: Pegar el código o descomentar la línea siguiente para incluirlo directamente desde ../tarea2.jl
-% \lstinputlisting[caption={Código del Apartado 2 (\texttt{tarea2.jl}).}, label={lst:apartado2}]{../tarea2.jl}
+\lstinputlisting[caption={Código del Apartado 2 (\texttt{tarea2.jl}).}, label={lst:apartado2}]{../tarea2.jl}
 
 \end{document}
