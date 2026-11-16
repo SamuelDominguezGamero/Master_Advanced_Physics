@@ -9,9 +9,18 @@
 \usepackage{lmodern}
 \usepackage{microtype}
 \linespread{1.06}
+\usepackage[skip=4pt]{parskip}
+\setlength{\parindent}{0pt}
+
+
+
+
 
 % Matemáticas y física
 \usepackage{amsmath, amssymb, amsfonts}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
 
 % Geometría A4 estándar revista científica (1 columna)
 \usepackage[
@@ -71,13 +80,13 @@
     literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
              {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
              {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {π}{{$\pi$}}1
+             {σ}{{$\sigma$}}1 {±}{{$\pm$}}1 {∝}{{$\propto$}}1
 }
 
 % Datos del documento
 \title{\textbf{Tarea 1 -- Métodos de Simulación y Sistemas Complejos}}
 \author{Samuel Domínguez Gamero}
 \date{Noviembre de 2026}
-
 \begin{document}
 
 \maketitle
@@ -152,37 +161,133 @@ permitiéndonos obtener el valor de $\pi$.
 
 
 
-\subsection{Implementación algorítmica}
-% TODO: Describir el algoritmo implementado, la estimación del error estadístico y el estudio de convergencia con N.
+\subsection{Implementación numérica}
+La implementación numérica de la técnica previamente explicada es directa. A continuación se desarrollan ciertos detalles técnicos del procedimiento, así como se aporta un pseudocódigo que resume el flujo de trabajo.
 
-% ----------------------------------------------------------------------
+El experimento se repite múltiples veces, para obtener resultados estadísticamente significativos (cada una de estas simulaciones se realiza con una semilla aleatoria diferente). En cada repetición, se almacena el valor de $\pi$ obtenido, escogiéndose finalmente el promedio de todas las realizaciones como valor definitivo. Se calcula, además, la desviación estándar de $\pi$, $\sigma$, como medida de dispersión estadística respecto de la media, de los resultados obtenidos en cada realización.
+
+Se compararán resultados $(\pi, \sigma)$ frente al número de puntos muestreados $N$. Se espera observar que valores de $\sigma$ disminuyan al aumentar $N$. En particular, se pretende comprobar empíricamente la relación $\sigma \propto N^{-1/2}$.
+
+Para obtener máxima eficiencia computacional, se tratan los núcleos del procesador como unidades de cómputo independiente, asignando una realización completa (el muestreo de $N$ puntos) a cada uno de ellos, calculando simultáneamente 14 valores de $\pi$, para el procesador utilizado en este trabajo: \textit{Intel Core Ultra 5 225U}, equipado con 12 núcleos y 14 hilos.
+
+
 \section{Apartado 2: Integración numérica Monte Carlo}
-En este apartado se aborda la estimación numérica de integrales definidas mediante técnicas de Monte Carlo, comparando el muestreo uniforme estándar con estrategias de reducción de varianza.
+En lo que sigue, se aborda la estimación numérica de integrales definidas mediante técnicas de Monte Carlo, comparando el muestreo uniforme estándar con otras estrategias de reducción de varianza.
 
-La integral a 
+La expresión de la integral numérica se relaciona de forma directa con la clásica integral de Riemann:
+\begin{equation}
+ I = \int_a^b f(x) \mathrm{d} x \approx \sum_{i=1}^N \frac{b-a}{N}f(x_i).
+\end{equation}
+donde $i$ hace referencia al índice de los puntos muestreados de forma aleatoria, sobre el dominio de definición de la integral.
+
+Caracterizar esta aleatoriedad es precisamente la mejor herramienta que tenemos para entender el grado de precisión de la estimación del valor numérico de la integral.
 
 \subsection{Estimación mediante distribución uniforme}
-El enfoque más directo (Monte Carlo crudo) consiste en muestrear puntos de forma uniforme en el dominio de integración. Sin embargo, cuando el integrando presenta variaciones bruscas o regiones que contribuyen muy poco a la integral, este método resulta ineficiente y requiere un número elevado de muestras para alcanzar una precisión aceptable.
-% TODO: Añadir el estimador uniforme y su varianza.
+El enfoque más directo consiste en muestrear puntos de forma uniforme en el dominio de integración. Sin embargo, cuando el integrando presenta variaciones bruscas o regiones que contribuyen muy poco a la integral, este método resulta ineficiente y requiere un número elevado de muestras para alcanzar una precisión aceptable.
 
 \subsection{Muestreo por importancia (\textit{Importance Sampling})}
-Para mitigar la alta varianza del muestreo uniforme, se recurre a la generación no uniforme de números aleatorios mediante \textit{Importance Sampling}. La idea es concentrar las muestras en las regiones donde el integrando es más significativo, utilizando una función de densidad de probabilidad auxiliar $p(x)$ adaptada a la forma del integrando.
-% TODO: Escribir la reescritura de la integral con p(x) y justificar la elección de la distribución auxiliar.
+Para mitigar la alta varianza del muestreo uniforme, se recurre a la generación no uniforme de números aleatorios mediante \textit{Importance Sampling}. La idea es concentrar las muestras en las regiones donde el integrando es más significativo, utilizando una función de densidad de probabilidad auxiliar $p(x)$ adaptada a la forma del integrando. A continuación desarrollamos a fondo esta idea.
 
-\subsection{Método de aceptación-rechazo}
+Supongamos que existe una función $p(x)$ que sea suficientemente parecida a la función a integrar, lo cual se traduce matemáticamente en:
+\begin{equation}
+ f(x) / p(x) \approx \text{const} \hspace{4mm} \forall x \in [a,b]
+\end{equation}
+Si exigimos que dicha función sea estrictamente positiva donde el integrando no se anula ($p(x)>0 \hspace{1mm} \forall x \in [a,b]$ tal que $f(x) \neq 0$), podemos encontrar entonces $p_{n}(x)$, definida tal que:
+\begin{equation}
+ p_n(x) = \frac{p(x)}{\int_a^b p(x)\,dx}
+\end{equation}
+De este modo, la integral original puede reescribirse como:
+\begin{equation}
+ \int_a^b f(x)\,dx = \int_a^b \frac{f(x)}{p_n(x)} p_n(x)\,dx
+\end{equation}
+interpretando así $p_n(x)$ como una densidad de probabilidad que servirá como motor de generación de números aleatorios, en lugar de usar una distribución uniforme.
+
+El principal problema asociado a este método es poder generar números aleatorios con una distribución específica (además de poder normalizar $p(x)$). Existen múltiples algoritmos para generar números pseudoaleatorios con diferentes distribuciones, aunque el grueso de los esfuerzos en la investigación siempre se ha concentrado en generar buenos algoritmos de generación de secuencias pseudoaleatorias con distribución uniforme entre 0 y 1, ya que estas pueden transformarse de forma suficientemente sencilla en otras distribuciones.
+
+En particular, para este trabajo se emplea un muestreo no uniforme bajo la distribución $p(x)~=~1~-~1.2x^3$, normalizada bajo la constante de normalización $A$ en $p_n(x) = A p(x)$.
+
+\subsubsection{Método de aceptación-rechazo}
 Cuando no es inmediato muestrear directamente de la distribución auxiliar elegida (por ejemplo, mediante el método de la transformada inversa), puede emplearse el método de aceptación-rechazo para generar los puntos distribuidos según $p(x)$ a partir de una distribución envolvente más sencilla.
-% TODO: Explicar brevemente el criterio de aceptación-rechazo aplicado al problema.
+
+Para ello, se introduce una densidad de probabilidad propuesta $g(x)$, de la cual sí sepamos generar muestras de forma directa, junto con una constante positiva $M$ tal que la envolvente acote superiormente a nuestra distribución objetivo en todo el intervalo de interés:
+\begin{equation}
+    p(x) \leq M \, g(x) \qquad \forall x \in [a,b]
+\end{equation}
+El procedimiento para obtener cada muestra distribuida según $p_n(x)$ consiste en los siguientes pasos:
+\begin{enumerate}
+    \item Generar un punto candidato $x_c$ siguiendo la distribución propuesta $g(x)$.
+    \item Generar un número aleatorio uniforme $u \sim \mathcal{U}[0,1]$.
+    \item Evaluar el cociente de aceptación: si se cumple la condición
+    \begin{equation}
+        u \leq \frac{p(x_c)}{M \, g(x_c)},
+    \end{equation}
+    se acepta el candidato haciendo $x_i = x_c$; en caso contrario, se rechaza y se repite el proceso desde el primer paso.
+\end{enumerate}
+De este modo, la probabilidad de aceptar un punto en una región dada es proporcional a $p(x_c)$, garantizando que los valores aceptados sigan exactamente la densidad normalizada $p_n(x)$ sin necesidad de calcular explícitamente su constante de normalización. Cabe destacar que la eficiencia del algoritmo viene determinada por el inverso de $M$, por lo que conviene elegir la menor constante $M$ posible que satisfaga la cota superior (idealmente $M = \sup_{x \in [a,b]} \frac{p(x)}{g(x)}$) para minimizar el número de muestras rechazadas.
 
 
 % ----------------------------------------------------------------------
 \section{Resultados}
-% TODO: Presentar tablas y figuras con los resultados numéricos de ambos apartados.
+\subsection{Estimación del valor de $\pi$}
 
+% --- Tabla 1: Resumen primera ejecución (N = 1000, reps = 50) ---
+\begin{table}[htbp]
+    \centering
+    \caption{Estadísticos de la estimación de $\pi$ en $5\mathrm{D}$ mediante Monte Carlo ($N = 10^3$, $50$ realizaciones, $14$ hilos).}
+    \label{tab:mc_resumen_n1000}
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parámetro / Métrica} & \textbf{Valor} \\
+        \midrule
+        Dimensión del hipervolumen ($d$) & $5$ \\
+        Número de muestras ($N$) & $10^3$ \\
+        Realizaciones independientes ($\text{reps}$) & $50$ \\
+        Media muestral ($\bar{\pi}$) & $3.1479 \pm 0.0885$ \\
+        Desviación estándar ($\sigma$) & $0.08851$ \\
+        Valor mínimo / máximo & $2.8856 \;/\; 3.3210$ \\
+        Error relativo respecto a $\pi$ & $0.20\%$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\begin{table}[htbp]
+    \centering
+    \caption{Convergencia del estimador $\bar{\pi}(N)$ y su desviación estándar $\sigma(N)$ en función del número de muestras $N$ ($\text{reps} = 500$, $\pi_{\text{exacto}} \approx 3.141593$).}
+    \label{tab:mc_convergencia}
+    \begin{tabular}{
+        S[table-format=1e1]
+        S[table-format=1.6]
+        S[table-format=1.6]
+        S[table-format=1.6]
+    }
+        \toprule
+        {\textbf{Muestras ($N$)}} & {\textbf{Estimación ($\bar{\pi}$)}} & {\textbf{Desviación ($\sigma_{\text{emp}}$)}} & {\textbf{Teórico ($\sigma_0 N^{-1/2}$)}} \\
+        \midrule
+        1e3 & 3.138944 & 0.086516 & 0.086516 \\
+        1e4 & 3.142875 & 0.027435 & 0.027359 \\
+        1e5 & 3.142198 & 0.008627 & 0.008652 \\
+        1e6 & 3.141593 & 0.002894 & 0.002736 \\
+        1e7 & 3.141577 & 0.000862 & 0.000865 \\
+        1e8 & 3.141573 & 0.000282 & 0.000274 \\
+        \midrule
+        \multicolumn{3}{l}{\textbf{Pendiente log-log estimada ($m$)}} & \multicolumn{1}{c}{$-0.4975$} \\
+        \multicolumn{3}{l}{\textbf{Pendiente teórica esperada}} & \multicolumn{1}{c}{$-0.5000$} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1
+    \textwidth]{../convergencia_mc_pi_log.png}
+    \caption{Convergencia de la desviación estándar $\sigma(N)$ del estimador Monte Carlo de $\pi$ en $5\mathrm{D}$ frente al número de muestras $N$ ($\text{reps} = 500$). La línea discontinua roja muestra el ajuste por mínimos cuadrados ($m = -0.4975$), consistente con la ley de escala teórica $N^{-1/2}$ (línea punteada gris).}
+    \label{fig:convergencia_mc_pi}
+\end{figure}
 
 
 % ----------------------------------------------------------------------
 \section{Conclusiones}
-% TODO: Resumir los hallazgos principales, comparación de precisión/convergencia y observaciones finales.
 
 % ----------------------------------------------------------------------
 % \nocite{*} % Descomentar si quieres que aparezcan todas las entradas de references.bib sin citarlas en el texto
@@ -194,8 +299,7 @@ Cuando no es inmediato muestrear directamente de la distribución auxiliar elegi
 \appendix
 
 \section{Códigos Apartado 1}
-% TODO: Pegar el código o descomentar la línea siguiente para incluirlo directamente desde ../tarea1.jl
-% \lstinputlisting[caption={Código del Apartado 1 (\texttt{tarea1.jl}).}, label={lst:apartado1}]{../tarea1.jl}
+\lstinputlisting[caption={Código del Apartado 1 (\texttt{tarea1.jl}).}, label={lst:apartado1}]{../tarea1.jl}
 
 \section{Códigos Apartado 2}
 % TODO: Pegar el código o descomentar la línea siguiente para incluirlo directamente desde ../tarea2.jl

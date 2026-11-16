@@ -1,3 +1,10 @@
+#!/usr/bin/env -S julia --project=. --threads auto
+
+hilos_asignados = Threads.nthreads()
+hilos_totales   = Sys.CPU_THREADS
+
+println("Ejecutando con $(Threads.nthreads()) / $(Sys.CPU_THREADS) hilos del procesador.")
+
 using Random
 using SpecialFunctions
 using Statistics
@@ -52,7 +59,7 @@ end
 
 # Primera Ejecución, para el ejercicio 1a
 println("Primera iteración del experimento") 
-buffer_pi_1, media_pi_1, std_pi_1 = estimar_pi_mc(1_000, 1.0, 10; verbose=true)
+buffer_pi_1, media_pi_1, std_pi_1 = estimar_pi_mc(1_000, 1.0, 50; verbose=true)
 
 
 
@@ -60,17 +67,29 @@ println("------------------------------------")
 
 
 # Barrido logarítmico en N
-println("Repetición del experimento para varios valores de N")
-valores_N = [20^3, 10^4, 20^4, 10^5, 10^6, 10^7, 10^8]
+valores_N = sort([10^3, 10^4, 10^5, 10^6, 10^7, 10^8])
 L = 1.0
-reps = 50
+reps = 500
+println("Repetición del experimento para varios valores de N")
+println("Valores de N utilizados: $valores_N")
+println("$reps repeticiones para cada N")
+
 
 desviaciones = Float64[]
+pis          = Float64[]
+
 
 for N in valores_N
-    _, _, sigma = estimar_pi_mc(N, L, reps; verbose=false)
+    _, media, sigma = estimar_pi_mc(N, L, reps; verbose=false)
     push!(desviaciones, sigma)
+    push!(pis, media)
+
     println("N = $(rpad(N, 8)) -> std = $sigma")
+    println("N = $(rpad(N, 8)) -> pi =  $media")
+    
+
+
+    
 end
 
 # Comprobación de ley de escala (Monte Carlo estándar: sigma ~ 1 / sqrt(N))
@@ -107,7 +126,7 @@ plot(
     marker = (:circle, 6, :blue),
     xlabel = "Número de muestras (N)", 
     ylabel = "Desviación estándar σ(N)",
-    title = "Convergencia Monte Carlo: σ(N) ∝ N^($round(pendiente, digits=3))",
+    title = "Convergencia Monte Carlo: σ(N) ∝ N^$(round(pendiente, digits=3))",
     legend = :topright,
     grid = true,
     minorgrid = true
@@ -125,11 +144,11 @@ plot!(
 sigma_teorica = desviaciones[1] .* sqrt.(valores_N[1] ./ valores_N)
 plot!(
     valores_N, 
-    sigma_teorica, 
+    sigma_teorica, 	
     line = (:dot, 1.5, :gray), 
     label = "Referencia teórica N^(-1/2)"
 )
 
 # Guardar figura
-savefig("convergencia_mc_pi_log.png")
+savefig("convergencia_mc_pi_log.pdf")
 
